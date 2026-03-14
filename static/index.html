@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PPE Detection System</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#0f1117; color:#e0e0e0; min-height:100vh; }
+
+    header {
+      background:linear-gradient(135deg,#1a1f2e,#16213e);
+      padding:20px 40px;
+      border-bottom:1px solid #2a2f3e;
+      display:flex; align-items:center; gap:14px;
+    }
+    .logo { width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px; }
+    header h1 { font-size:22px;font-weight:600;color:#fff; }
+    header p  { font-size:13px;color:#8899aa;margin-top:2px; }
+
+    .container { max-width:960px;margin:40px auto;padding:0 20px;display:flex;flex-direction:column;gap:24px; }
+
+    .card { background:#1a1f2e;border:1px solid #2a2f3e;border-radius:16px;padding:28px; }
+    .card h2 { font-size:16px;font-weight:600;color:#f59e0b;margin-bottom:18px;display:flex;align-items:center;gap:8px; }
+
+    .tabs { display:flex;gap:8px;margin-bottom:20px; }
+    .tab { padding:8px 20px;border-radius:8px;border:1px solid #2a2f3e;background:transparent;color:#8899aa;cursor:pointer;font-size:14px;transition:all 0.2s; }
+    .tab.active { background:linear-gradient(135deg,#f59e0b,#ef4444);color:white;border-color:transparent; }
+
+    .upload-area { border:2px dashed #3a3f50;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s; }
+    .upload-area:hover { border-color:#f59e0b;background:#1e2236; }
+    .upload-icon { font-size:40px;margin-bottom:12px; }
+    .upload-area p { color:#8899aa;font-size:14px;margin-bottom:14px; }
+    input[type=file] { display:none; }
+
+    .btn { padding:10px 24px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s; }
+    .btn-primary { background:linear-gradient(135deg,#f59e0b,#ef4444);color:white; }
+    .btn-primary:hover { opacity:0.9;transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:0.5;cursor:not-allowed;transform:none; }
+
+    .alert { padding:12px 16px;border-radius:8px;font-size:14px;margin-top:12px; }
+    .alert-success { background:#052e16;color:#4ade80;border:1px solid #166534; }
+    .alert-error   { background:#450a0a;color:#f87171;border:1px solid #991b1b; }
+    .alert-warning { background:#451a03;color:#fb923c;border:1px solid #9a3412; }
+    .alert-info    { background:#0c0a3e;color:#a78bfa;border:1px solid #3730a3; }
+
+    .spinner { display:inline-block;width:16px;height:16px;border:2px solid #3a3f50;border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:6px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .results { display:none;margin-top:20px; }
+    .result-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px; }
+    .stat-card { background:#0f1117;border:1px solid #2a2f3e;border-radius:10px;padding:16px;text-align:center; }
+    .stat-num { font-size:28px;font-weight:700;color:#f59e0b; }
+    .stat-label { font-size:12px;color:#8899aa;margin-top:4px; }
+
+    .output-image { width:100%;border-radius:10px;border:1px solid #2a2f3e;margin-top:12px; }
+
+    .timestamps { margin-top:16px; }
+    .ts-item { background:#0f1117;border:1px solid #2a2f3e;border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;gap:12px;align-items:center; }
+    .ts-badge { background:#451a03;color:#fb923c;border:1px solid #9a3412;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;min-width:52px;text-align:center; }
+    .ts-info { font-size:13px;color:#8899aa; }
+
+    .safety-badge { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:99px;font-size:13px;font-weight:500;margin-bottom:12px; }
+    .safety-alert  { background:#450a0a;color:#f87171;border:1px solid #991b1b; }
+    .safety-clear  { background:#052e16;color:#4ade80;border:1px solid #166534; }
+
+    #fileSelectedInfo { display:none;margin-top:12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🦺</div>
+  <div>
+    <h1>PPE Detection System</h1>
+    <p>AI-powered workplace safety monitoring using YOLOv8</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>⚠️ Upload for PPE Detection</h2>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('image')">🖼️ Image Detection</button>
+      <button class="tab" onclick="switchTab('video')">🎥 Video Detection</button>
+    </div>
+
+    <div id="imageTab">
+      <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+        <div class="upload-icon">📸</div>
+        <p>Click to upload an image for PPE detection</p>
+        <p style="font-size:12px;color:#4a5568;">Supports JPG, PNG, BMP</p>
+        <input type="file" id="imageInput" accept=".jpg,.jpeg,.png,.bmp" onchange="prepareFile(this,'image')"/>
+      </div>
+    </div>
+
+    <div id="videoTab" style="display:none">
+      <div class="upload-area" onclick="document.getElementById('videoInput').click()">
+        <div class="upload-icon">🎬</div>
+        <p>Click to upload a video for PPE detection</p>
+        <p style="font-size:12px;color:#4a5568;">Supports MP4, AVI, MOV — keep under 30 seconds</p>
+        <input type="file" id="videoInput" accept=".mp4,.avi,.mov,.mkv" onchange="prepareFile(this,'video')"/>
+      </div>
+    </div>
+
+    <div id="fileSelectedInfo">
+      <div class="alert alert-info" id="fileLabel"></div>
+      <div style="margin-top:12px;text-align:center;">
+        <button class="btn btn-primary" id="detectBtn" onclick="runDetection()">🔍 Run PPE Detection</button>
+      </div>
+    </div>
+
+    <div id="uploadMsg"></div>
+  </div>
+
+  <!-- Results Card -->
+  <div class="card">
+    <h2>📊 Detection Results</h2>
+    <div id="results" class="results">
+
+      <div id="safetyBadge" class="safety-badge safety-alert">
+        <span>⚠️</span><span id="safetyText">Analyzing...</span>
+      </div>
+
+      <div class="result-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="personCount">0</div>
+          <div class="stat-label">Persons Detected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="detectionCount">0</div>
+          <div class="stat-label">Total Detections</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="alertCount">0</div>
+          <div class="stat-label">Alert Frames</div>
+        </div>
+      </div>
+
+      <div id="outputImage"></div>
+      <div id="timestampsList"></div>
+    </div>
+    <div id="noResults" style="color:#4a5568;font-size:14px;">Upload a file and run detection to see results here.</div>
+  </div>
+</div>
+
+<script>
+  let currentTab = 'image';
+  let selectedFile = null;
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('imageTab').style.display = tab === 'image' ? 'block' : 'none';
+    document.getElementById('videoTab').style.display = tab === 'video' ? 'block' : 'none';
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='image')||(i===1&&tab==='video')));
+    document.getElementById('fileSelectedInfo').style.display = 'none';
+    selectedFile = null;
+  }
+
+  function prepareFile(input, type) {
+    selectedFile = input.files[0];
+    if (!selectedFile) return;
+    document.getElementById('fileLabel').textContent = `📁 ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(1)} MB)`;
+    document.getElementById('fileSelectedInfo').style.display = 'block';
+  }
+
+  async function runDetection() {
+    if (!selectedFile) return;
+
+    const btn = document.getElementById('detectBtn');
+    const uploadMsg = document.getElementById('uploadMsg');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Detecting...';
+    uploadMsg.innerHTML = `<div class="alert alert-info" style="margin-top:12px;">🔍 Running YOLOv8 detection... please wait</div>`;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    const endpoint = currentTab === 'image' ? '/detect-image' : '/detect-video';
+
+    try {
+      const res = await fetch(endpoint, { method:'POST', body:formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        uploadMsg.innerHTML = `<div class="alert alert-error" style="margin-top:12px;">❌ ${data.detail}</div>`;
+        return;
+      }
+
+      uploadMsg.innerHTML = `<div class="alert alert-success" style="margin-top:12px;">✅ ${data.message}</div>`;
+      showResults(data, currentTab);
+
+    } catch(e) {
+      uploadMsg.innerHTML = `<div class="alert alert-error" style="margin-top:12px;">❌ Connection error. Is the server running?</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🔍 Run PPE Detection';
+    }
+  }
+
+  function showResults(data, type) {
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('noResults').style.display = 'none';
+
+    if (type === 'image') {
+      document.getElementById('personCount').textContent = data.person_count || 0;
+      document.getElementById('detectionCount').textContent = data.total_detections || 0;
+      document.getElementById('alertCount').textContent = data.person_count > 0 ? '⚠️' : '✅';
+
+      const badge = document.getElementById('safetyBadge');
+      const txt = document.getElementById('safetyText');
+      if (data.person_count > 0) {
+        badge.className = 'safety-badge safety-alert';
+        txt.textContent = data.safety_status;
+      } else {
+        badge.className = 'safety-badge safety-clear';
+        txt.textContent = 'No persons detected — area clear';
+      }
+
+      document.getElementById('outputImage').innerHTML = `
+        <p style="font-size:13px;color:#8899aa;margin-bottom:8px;">Detected output:</p>
+        <img src="${data.output_image_url}?t=${Date.now()}" class="output-image" alt="Detection result"/>`;
+      document.getElementById('timestampsList').innerHTML = '';
+
+    } else {
+      document.getElementById('personCount').textContent = data.max_persons_in_frame || 0;
+      document.getElementById('detectionCount').textContent = data.total_frames || 0;
+      document.getElementById('alertCount').textContent = data.frames_with_persons || 0;
+
+      document.getElementById('safetyText').textContent = data.safety_summary;
+
+      document.getElementById('outputImage').innerHTML = '';
+
+      if (data.alert_timestamps && data.alert_timestamps.length > 0) {
+        document.getElementById('timestampsList').innerHTML = `
+          <p style="font-size:13px;color:#8899aa;margin:12px 0 8px;">Alert timestamps:</p>
+          ${data.alert_timestamps.map(t => `
+            <div class="ts-item">
+              <div class="ts-badge">${t.timestamp}</div>
+              <div class="ts-info">${t.persons} person(s) detected</div>
+            </div>`).join('')}`;
+      }
+    }
+  }
+</script>
+</body>
+</html>
