@@ -8,7 +8,11 @@ from dotenv import load_dotenv
 from detector import detect_ppe_in_image, detect_ppe_in_video
 
 load_dotenv()
-
+# Create required directories on startup
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("outputs", exist_ok=True)
+os.makedirs("static", exist_ok=True)
+os.makedirs("frames", exist_ok=True)
 app = FastAPI(title="PPE Detection System")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
